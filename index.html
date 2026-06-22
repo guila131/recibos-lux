@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Recibos - Lux Satelital</title>
+  <!-- Importamos fuentes profesionales: Montserrat para lectura y Great Vibes para la firma -->
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* Estilos generales actualizados a Montserrat */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; }
+    
+    .container { width: 100%; }
+    .header { 
+      background: #111; padding: 16px 28px; display: flex; align-items: center; gap: 14px; 
+      color: #fff;
+    }
+    .header-logo { display: flex; flex-direction: column; }
+    .header-logo .name { font-size: 22px; font-weight: 900; letter-spacing: 3px; }
+    .header-logo .sub { font-size: 9px; letter-spacing: 4px; color: #aaa; }
+    .header-divider { width: 1px; height: 40px; background: #444; }
+    .header-title { color: #ddd; font-size: 13px; font-weight: 500; letter-spacing: 1px; }
+    
+    .content { max-width: 680px; margin: 0 auto; padding: 32px 20px; }
+    .main { background: #f5f5f5; min-height: 100vh; }
+    
+    /* Controles de formulario y botones */
+    .form-group { margin-bottom: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .search-input { flex: 1; min-width: 200px; padding: 12px 16px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 14px; font-family: inherit; }
+    .btn-primary { background: #111; color: #fff; padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap; font-family: inherit; transition: 0.2s; }
+    .btn-primary:hover { background: #333; }
+    .btn-secondary { background: #fff; color: #111; padding: 10px 22px; border-radius: 7px; border: none; cursor: pointer; font-size: 14px; font-weight: 700; font-family: inherit; transition: 0.2s; }
+    .btn-secondary:hover { background: #eee; }
+    .btn-danger { background: #fff; color: #c00; padding: 9px 14px; border-radius: 7px; border: 1.5px solid #eee; cursor: pointer; font-size: 13px; font-family: inherit; transition: 0.2s; }
+    .btn-danger:hover { background: #ffe0e0; }
+    .btn-small { background: #111; color: #fff; padding: 9px 18px; border-radius: 7px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; transition: 0.2s; }
+    .btn-small:hover { background: #333; }
+    
+    .date-section { display: flex; align-items: center; gap: 10px; }
+    .date-label { font-size: 13px; color: #555; white-space: nowrap; font-weight: 500; }
+    .date-input { padding: 8px 12px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 13px; font-family: inherit; }
+    
+    /* Lista de clientes */
+    .clientes-list { display: flex; flex-direction: column; gap: 10px; }
+    .cliente-item { 
+      background: #fff; border-radius: 10px; border: 1.5px solid #e8e8e8; padding: 16px 20px;
+      display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,.02);
+      transition: transform 0.1s;
+    }
+    .cliente-item:hover { transform: translateY(-1px); border-color: #ddd; }
+    .cliente-info h3 { font-weight: 700; font-size: 15px; color: #111; }
+    .cliente-info p { color: #666; font-size: 13px; margin-top: 4px; font-weight: 500; }
+    .cliente-actions { display: flex; gap: 8px; }
+    
+    .empty-state { text-align: center; color: #aaa; padding: 40px 0; font-size: 14px; }
+    
+    /* Vista del recibo */
+    .recibo-view { background: #e8e8e8; min-height: 100vh; }
+    .recibo-header { 
+      background: #111; padding: 14px 24px; display: flex; align-items: center; 
+      justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .recibo-header-left { display: flex; align-items: center; gap: 14px; }
+    .recibo-header-right { display: flex; gap: 10px; align-items: center; }
+    .btn-back { background: transparent; border: 1.5px solid #555; color: #ccc; padding: 8px 14px; border-radius: 7px; cursor: pointer; font-size: 13px; font-family: inherit; }
+    .btn-back:hover { background: #222; color: #fff; border-color: #777; }
+    .recibo-title { color: #fff; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; }
+    .date-input-dark { padding: 8px 12px; border-radius: 7px; border: 1.5px solid #444; background: #222; color: #fff; font-size: 13px; font-family: inherit; }
+    
+    /* Ajuste para que el canvas se vea responsivo en pantalla pero gigante al descargar */
+    .recibo-preview { display: flex; justify-content: center; padding: 32px 20px; overflow-x: auto; }
+    .recibo-canvas-container { box-shadow: 0 10px 40px rgba(0,0,0,.15); border-radius: 4px; max-width: 100%; height: auto; background: #fff; }
+    
+    /* Formulario nuevo cliente */
+    .form-card { background: #fff; border-radius: 12px; padding: 32px; border: 1.5px solid #e8e8e8; box-shadow: 0 4px 12px rgba(0,0,0,.03); }
+    .form-card h2 { margin: 0 0 24px; font-size: 18px; font-weight: 700; color: #111; }
+    .form-field { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; color: #666; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-input { width: 100%; padding: 12px 14px; border-radius: 7px; border: 1.5px solid #ddd; font-size: 14px; font-family: inherit; transition: 0.2s; }
+    .form-input:focus { border-color: #111; outline: none; }
+    .form-select { width: 100%; padding: 12px 14px; border-radius: 7px; border: 1.5px solid #ddd; font-size: 14px; background: #fff; font-family: inherit; cursor: pointer; }
+    .form-actions { display: flex; gap: 10px; margin-top: 24px; }
+    .form-actions button { flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; font-family: inherit; }
+    
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// ────────────────────────────────────────
+// DATOS INICIALES (BASE DE DATOS)
+// ────────────────────────────────────────
+const CLIENTES_INICIALES = [
+  // Zona: 1º de Mayo
+  { id: 1, nombre: "Karen Autre", plan: "Zona 1º de Mayo", monto: 400, formaPago: "Efectivo" },
+  { id: 2, nombre: "Ana Melchor", plan: "Zona 1º de Mayo", monto: 400, formaPago: "Efectivo" },
+  { id: 3, nombre: "Suegros", plan: "Zona 1º de Mayo", monto: 400, formaPago: "Efectivo" },
+  { id: 4, nombre: "Oliver Rancho", plan: "Zona 1º de Mayo", monto: 400, formaPago: "Efectivo" },
+  { id: 5, nombre: "Adorit Ramos", plan: "Zona 1º de Mayo", monto: 400, formaPago: "Efectivo" },
+  { id: 6, nombre: "Melissa", plan: "Zona 1º de Mayo", monto: 350, formaPago: "Efectivo" },
+  { id: 7, nombre: "Lili Rivera", plan: "Zona 1º de Mayo", monto: 300, formaPago: "Efectivo" },
+  { id: 8, nombre: "Dany Janey", plan: "Zona 1º de Mayo", monto: 300, formaPago: "Efectivo" },
+  { id: 9, nombre: "Diana Aguilar", plan: "Zona 1º de Mayo", monto: 300, formaPago: "Efectivo" },
+  { id: 10, nombre: "Orquídea", plan: "Zona 1º de Mayo", monto: 300, formaPago: "Efectivo" },
+  { id: 11, nombre: "Isaac Grajales", plan: "Zona 1º de Mayo", monto: 300, formaPago: "Efectivo" },
+  { id: 12, nombre: "Seres Simuta", plan: "Zona 1º de Mayo", monto: 300, formaPago: "Efectivo" },
+  { id: 13, nombre: "Eréndira", plan: "Zona 1º de Mayo", monto: 300, formaPago: "Efectivo" },
+  { id: 14, nombre: "Enelva Macal", plan: "Zona 1º de Mayo", monto: 300, formaPago: "Efectivo" },
+  { id: 15, nombre: "Yesenia", plan: "Zona 1º de Mayo", monto: 300, formaPago: "Efectivo" },
+  { id: 16, nombre: "Martín Antonio", plan: "Zona 1º de Mayo", monto: 250, formaPago: "Efectivo" },
+  { id: 17, nombre: "Olga Martínez", plan: "Zona 1º de Mayo", monto: 400, formaPago: "Efectivo" },
+
+  // Zona: Niños Héroes
+  { id: 18, nombre: "Lilia García Velazco", plan: "Zona Niños Héroes", monto: 480, formaPago: "Efectivo" },
+  { id: 19, nombre: "Ciro", plan: "Zona Niños Héroes", monto: 400, formaPago: "Efectivo" },
+  { id: 20, nombre: "Carmen", plan: "Zona Niños Héroes", monto: 480, formaPago: "Efectivo" },
+  { id: 21, nombre: "Itzel", plan: "Zona Niños Héroes", monto: 480, formaPago: "Efectivo" },
+  { id: 22, nombre: "Jose Alberto Reyes Ramírez", plan: "Zona Niños Héroes", monto: 400, formaPago: "Efectivo" },
+  { id: 23, nombre: "Aravela Ruiz", plan: "Zona Niños Héroes", monto: 480, formaPago: "Efectivo" },
+  { id: 24, nombre: "Oscar Andrés Torres Guillén", plan: "Zona Niños Héroes", monto: 480, formaPago: "Efectivo" },
+  { id: 25, nombre: "Álvaro Álvarez Hernández", plan: "Zona Niños Héroes", monto: 400, formaPago: "Efectivo" },
+  { id: 26, nombre: "Marlene Hernández Díaz", plan: "Zona Niños Héroes", monto: 400, formaPago: "Efectivo" },
+  { id: 27, nombre: "Cinthia Lisset Lara Moreno", plan: "Zona Niños Héroes", monto: 480, formaPago: "Efectivo" },
+  { id: 28, nombre: "Maria Guadalupe Hernández Cruz", plan: "Zona Niños Héroes", monto: 480, formaPago: "Efectivo" },
+  { id: 29, nombre: "Cinthia Elizabeth Gómez Hernández", plan: "Zona Niños Héroes", monto: 480, formaPago: "Efectivo" },
+  { id: 30, nombre: "José Eduardo Sánchez Gordillo", plan: "Zona Niños Héroes", monto: 480, formaPago: "Efectivo" },
+  { id: 31, nombre: "Fredy Ventura Méndez", plan: "Zona Niños Héroes", monto: 400, formaPago: "Efectivo" },
+  { id: 32, nombre: "Alejandro Hernández Hernández", plan: "Zona Niños Héroes", monto: 300, formaPago: "Efectivo" }
+];
+
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+// ────────────────────────────────────────
+// UTILIDADES
+// ────────────────────────────────────────
+function formatearFecha(date) {
+  return `${date.getDate()} de ${MESES[date.getMonth()]} de ${date.getFullYear()}`;
+}
+
+function periodoServicio(date) {
+  const inicio = new Date(date);
+  const fin = new Date(date);
+  fin.setMonth(fin.getMonth() + 1);
+  fin.setDate(fin.getDate() - 1);
+  return `${inicio.getDate()} de ${MESES[inicio.getMonth()]} al ${fin.getDate()} de ${MESES[fin.getMonth()]}`;
+}
+
+// ────────────────────────────────────────
+// GENERADOR DE CANVAS PRO (Alta Fidelidad)
+// ────────────────────────────────────────
+function generarReciboCanvas(cliente, fecha) {
+  const W = 794, H = 1123; 
+  const canvas = document.createElement("canvas");
+  canvas.width = W * 2; 
+  canvas.height = H * 2;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(2, 2); 
+
+  // Fondo Blanco Base
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+
+  // 1. BARRA GRIS SUPERIOR
+  ctx.fillStyle = "#737170"; 
+  ctx.fillRect(0, 105, W, 76);
+
+  // 2. TÍTULO "RECIBO DE PAGO"
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "600 32px 'Montserrat', sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.letterSpacing = "2px";
+  ctx.fillText("RECIBO DE PAGO", 280 + (W - 280) / 2, 105 + 76 / 2);
+  ctx.letterSpacing = "0px";
+
+  // 3. CAJA NEGRA DEL LOGO
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(88, 55, 190, 190);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.font = "900 56px 'Montserrat', sans-serif";
+  ctx.letterSpacing = "5px";
+  ctx.fillText("LUX", 185, 155);
+  
+  ctx.font = "600 13px 'Montserrat', sans-serif";
+  ctx.fillStyle = "#c0c0c0";
+  ctx.letterSpacing = "6px";
+  ctx.fillText("SATELITAL", 188, 188);
+  ctx.letterSpacing = "0px";
+
+  // 4. DATOS LATERALES DERECHOS
+  const labelX = 600, valorX = 620, maxRight = W - 88;
+
+  function campoLinea(label, valor, y) {
+    ctx.font = "600 16px 'Montserrat', sans-serif";
+    ctx.fillStyle = "#333333";
+    ctx.textAlign = "right";
+    ctx.fillText(label, labelX, y);
+    
+    ctx.strokeStyle = "#cccccc";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(valorX, y + 4);
+    ctx.lineTo(maxRight, y + 4);
+    ctx.stroke();
+    
+    ctx.font = "500 16px 'Montserrat', sans-serif";
+    ctx.fillStyle = "#000000";
+    ctx.textAlign = "left";
+    ctx.fillText(valor, valorX + 6, y);
+  }
+
+  campoLinea("Fecha", formatearFecha(fecha), 285);
+  campoLinea("Recibo a", cliente.nombre, 330);
+  campoLinea("Plan Adquirido", cliente.plan, 375);
+
+  // 5. ESTRUCTURA CENTRAL
+  const lx = 88; 
+
+  function lineaTexto(label, valor, y, customWidth) {
+    ctx.font = "600 16px 'Montserrat', sans-serif";
+    ctx.fillStyle = "#333333";
+    ctx.textAlign = "left";
+    ctx.fillText(label, lx, y);
+    
+    const textW = ctx.measureText(label).width;
+    const startLine = lx + textW + 14;
+    const endLine = customWidth ? (startLine + customWidth) : maxRight;
+
+    ctx.strokeStyle = "#cccccc";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(startLine, y + 4);
+    ctx.lineTo(endLine, y + 4);
+    ctx.stroke();
+
+    ctx.font = "500 16px 'Montserrat', sans-serif";
+    ctx.fillStyle = "#000000";
+    ctx.fillText(valor, startLine + 10, y);
+    return endLine;
+  }
+
+  lineaTexto("Recibí de", "Servicio de Internet Satelital", 465);
+
+  const endSumaX = lineaTexto("La suma de", `$${cliente.monto}`, 535, 200);
+  
+  const fpLabelX = endSumaX + 28;
+  ctx.font = "600 16px 'Montserrat', sans-serif";
+  ctx.fillStyle = "#333333";
+  ctx.fillText("Forma de pago", fpLabelX, 535);
+  
+  const fpLabelW = ctx.measureText("Forma de pago").width;
+  const fpLineStart = fpLabelX + fpLabelW + 14;
+  
+  ctx.strokeStyle = "#cccccc";
+  ctx.beginPath();
+  ctx.moveTo(fpLineStart, 539);
+  ctx.lineTo(maxRight, 539);
+  ctx.stroke();
+  
+  ctx.fillStyle = "#000000";
+  ctx.font = "500 16px 'Montserrat', sans-serif";
+  ctx.fillText(cliente.formaPago, fpLineStart + 10, 535);
+
+  lineaTexto("Por el trabajo realizado:", "servicio de internet", 605);
+
+  // 6. LÍNEAS SEPARADORAS DECORATIVAS
+  ctx.setLineDash([4, 5]);
+  ctx.strokeStyle = "#aaaaaa";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(lx, 655);
+  ctx.lineTo(maxRight, 655);
+  ctx.stroke();
+  ctx.setLineDash([]); 
+
+  ctx.strokeStyle = "#737170";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(lx, 672);
+  ctx.lineTo(maxRight, 672);
+  ctx.stroke();
+
+  lineaTexto("Correspondiente al periodo de", periodoServicio(fecha), 735);
+
+  // 7. ÁREA DE FIRMA
+  ctx.font = "normal 58px 'Great Vibes', cursive";
+  ctx.fillStyle = "#000000";
+  ctx.textAlign = "center";
+  ctx.fillText("Lux Satelital", W / 2, 875);
+
+  ctx.strokeStyle = "#cccccc";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - 140, 895);
+  ctx.lineTo(W / 2 + 140, 895);
+  ctx.stroke();
+
+  ctx.font = "500 13px 'Montserrat', sans-serif";
+  ctx.fillStyle = "#777777";
+  ctx.fillText("Firma y aclaración", W / 2, 920);
+  ctx.fillText("receptor", W / 2, 940);
+
+  // 8. PIE DE PÁGINA CORPORATIVO
+  ctx.fillStyle = "#737170";
+  ctx.fillRect(0, H - 175, W, 36);
+
+  ctx.font = "800 18px 'Montserrat', sans-serif";
+  ctx.fillStyle = "#000000";
+  ctx.letterSpacing = "2px";
+  ctx.fillText("CONTACTO", W / 2, H - 100);
+  ctx.letterSpacing = "0px";
+
+  const telefono = "961 269 75 67";
+  ctx.font = "700 22px 'Montserrat', sans-serif";
+  const telW = ctx.measureText(telefono).width;
+  const startXImg = (W / 2) - (telW / 2) - 18; 
+  
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#111111";
+  ctx.fillText(telefono, startXImg + 36, H - 52);
+
+  const imgWA = new Image();
+  imgWA.crossOrigin = "anonymous";
+  imgWA.src = "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg";
+  
+  if (imgWA.complete) {
+    ctx.drawImage(imgWA, startXImg, H - 74, 26, 26);
+  } else {
+    imgWA.onload = function() {
+      ctx.drawImage(imgWA, startXImg, H - 74, 26, 26);
+      const preview = document.getElementById('previewCanvas');
+      if (preview && app.vista === 'recibo') {
+        const previewCtx = preview.getContext('2d');
+        previewCtx.drawImage(canvas, 0, 0, preview.width, preview.height);
+      }
+    };
+  }
+
+  return canvas;
+}
+
+// ────────────────────────────────────────
+// STATE MANAGEMENT & UI LOGIC
+// ────────────────────────────────────────
+const app = {
+  clientes: [...CLIENTES_INICIALES],
+  vista: 'lista',
+  seleccionado: null,
+  busqueda: '',
+  fecha: new Date().toISOString().split('T')[0],
+  nuevoForm: { nombre: '', plan: '', monto: '', formaPago: 'Transferencia' },
+
+  setVista(v) { this.vista = v; this.render(); },
+  setSeleccionado(c) { this.seleccionado = c; this.setVista('recibo'); },
+  setBusqueda(b) { this.busqueda = b; this.render(); },
+  setFecha(f) { this.fecha = f; this.render(); },
+  
+  agregarCliente() {
+    const f = this.nuevoForm;
+    if (!f.nombre || !f.plan || !f.monto) return alert('Completa todos los campos obligatorios.');
+    this.clientes.unshift({ id: Date.now(), nombre: f.nombre, plan: f.plan, monto: Number(f.monto), formaPago: f.formaPago });
+    this.nuevoForm = { nombre: '', plan: '', monto: '', formaPago: 'Transferencia' };
+    this.setVista('lista');
+  },
+
+  eliminarCliente(id) {
+    if (!confirm('¿Estás seguro de eliminar este cliente?')) return;
+    this.clientes = this.clientes.filter(c => c.id !== id);
+    if (this.seleccionado?.id === id) { this.seleccionado = null; this.setVista('lista'); }
+  },
+
+  descargarRecibo() {
+    try {
+      const canvas = generarReciboCanvas(this.seleccionado, new Date(this.fecha + 'T12:00:00'));
+      const link = document.createElement('a');
+      link.download = `Recibo_${this.seleccionado.nombre.replace(/ /g,'_')}_${this.fecha}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch(e) {
+      alert('Hubo un error al generar la descarga: ' + e.message);
+    }
+  },
+
+  render() {
+    const html = this.vista === 'lista' ? this.renderLista() : this.vista === 'nuevo' ? this.renderNuevo() : this.renderRecibo();
+    document.getElementById('app').innerHTML = html;
+    this.attachEvents();
+  },
+
+  renderLista() {
+    const filtrados = this.clientes.filter(c => c.nombre.toLowerCase().includes(this.busqueda.toLowerCase()));
+    const items = filtrados.map(c => `
+      <div class="cliente-item">
+        <div class="cliente-info">
+          <h3>${c.nombre}</h3>
+          <p>${c.plan} · $${c.monto} · ${c.formaPago}</p>
+        </div>
+        <div class="cliente-actions">
+          <button class="btn-small" onclick="app.setSeleccionado(app.clientes.find(x=>x.id===${c.id}))">Ver recibo</button>
+          <button class="btn-danger" title="Eliminar" onclick="app.eliminarCliente(${c.id})">✕</button>
+        </div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="main">
+        <div class="header">
+          <div class="header-logo">
+            <div class="name">LUX</div>
+            <div class="sub">SATELITAL</div>
+          </div>
+          <div class="header-divider"></div>
+          <div class="header-title">GENERADOR DE RECIBOS</div>
+        </div>
+        <div class="content">
+          <div class="form-group">
+            <input type="text" class="search-input" id="busqueda" placeholder="🔍 Buscar cliente..." value="${this.busqueda}">
+            <button class="btn-primary" onclick="app.setVista('nuevo')">+ Nuevo cliente</button>
+          </div>
+          <div class="date-section" style="margin-bottom: 24px;">
+            <label class="date-label">Fecha de emisión:</label>
+            <input type="date" class="date-input" id="fecha" value="${this.fecha}">
+          </div>
+          <div class="clientes-list">
+            ${items.length ? items : '<div class="empty-state">No se encontraron clientes registrados.</div>'}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  renderNuevo() {
+    const f = this.nuevoForm;
+    return `
+      <div class="main">
+        <div class="header">
+          <div class="header-logo">
+            <div class="name">LUX</div>
+            <div class="sub">SATELITAL</div>
+          </div>
+          <div class="header-divider"></div>
+          <span class="header-title">REGISTRAR CLIENTE</span>
+        </div>
+        <div class="content">
+          <div class="form-card">
+            <h2>Datos del cliente</h2>
+            <div class="form-field">
+              <label class="form-label">Nombre completo</label>
+              <input type="text" class="form-input" id="nombre" placeholder="Ej. Juan Pérez Ruiz" value="${f.nombre}">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Plan contratado</label>
+              <input type="text" class="form-input" id="plan" placeholder="Ej. 25 megas" value="${f.plan}">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Monto mensual (\$)</label>
+              <input type="number" class="form-input" id="monto" placeholder="Ej. 400" value="${f.monto}">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Forma de pago</label>
+              <select class="form-select" id="formaPago">
+                <option ${f.formaPago==='Transferencia'?'selected':''}>Transferencia</option>
+                <option ${f.formaPago==='Efectivo'?'selected':''}>Efectivo</option>
+                <option ${f.formaPago==='Depósito'?'selected':''}>Depósito</option>
+                <option ${f.formaPago==='Tarjeta'?'selected':''}>Tarjeta</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" onclick="app.setVista('lista')" style="background:#f0f0f0; color:#333; border: 1.5px solid #ddd;">Cancelar</button>
+              <button class="btn-primary" onclick="app.guardarFormulario()">Guardar cliente</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  renderRecibo() {
+    const c = this.seleccionado;
+    return `
+      <div class="recibo-view">
+        <div class="recibo-header">
+          <div class="recibo-header-left">
+            <button class="btn-back" onclick="app.setVista('lista')">← Volver al listado</button>
+            <span class="recibo-title">Recibo de: ${c.nombre}</span>
+          </div>
+          <div class="recibo-header-right">
+            <input type="date" class="date-input-dark" id="fecha" value="${this.fecha}">
+            <button class="btn-secondary" onclick="app.descargarRecibo()" id="btnDescargar">⬇ Descargar imagen</button>
+          </div>
+        </div>
+        <div class="recibo-preview">
+          <canvas id="previewCanvas" class="recibo-canvas-container" width="1588" height="2246"></canvas>
+        </div>
+      </div>
+    `;
+  },
+
+  guardarFormulario() {
+    const nombre = document.getElementById('nombre').value;
+    const plan = document.getElementById('plan').value;
+    const monto = document.getElementById('monto').value;
+    const formaPago = document.getElementById('formaPago').value;
+    this.nuevoForm = { nombre, plan, monto, formaPago };
+    this.agregarCliente();
+  },
+
+  attachEvents() {
+    if (document.getElementById('busqueda')) {
+      document.getElementById('busqueda').addEventListener('input', e => this.setBusqueda(e.target.value));
+    }
+    if (document.getElementById('fecha')) {
+      document.getElementById('fecha').addEventListener('change', e => this.setFecha(e.target.value));
+    }
+    if (this.vista === 'recibo' && document.getElementById('previewCanvas')) {
+      const canvas = generarReciboCanvas(this.seleccionado, new Date(this.fecha + 'T12:00:00'));
+      const preview = document.getElementById('previewCanvas');
+      const ctx = preview.getContext('2d');
+      ctx.drawImage(canvas, 0, 0, preview.width, preview.height);
+    }
+  }
+};
+
+document.fonts.ready.then(() => {
+  app.render();
+});
+</script>
+
+</body>
+</html>
