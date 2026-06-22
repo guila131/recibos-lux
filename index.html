@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Lux Satelital - Gestión Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Montserrat', sans-serif; background: #f5f5f5; }
+    .header { background: #111; padding: 20px; color: #fff; text-align: center; }
+    .content { max-width: 600px; margin: 20px auto; padding: 20px; }
+    .cliente-item { background: #fff; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #ddd; }
+    .btn { padding: 8px 12px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; margin: 2px; }
+    .btn-action { background: #111; color: #fff; }
+    .btn-print { background: #090; color: #fff; }
+    .form-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; }
+    .recibo-canvas-container { background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ────────────────────────────────────────
+// DATOS Y LÓGICA DE MEGATAS
+// ────────────────────────────────────────
+function obtenerMegas(monto) {
+  const m = Number(monto);
+  if (m === 250) return "8 megas";
+  if (m === 300 || m === 350) return "10 megas";
+  if (m === 400) return "15 megas";
+  if (m === 480) return "20 megas";
+  return "Plan personalizado";
+}
+
+let clientes = [
+  { id: 1, nombre: "Karen Autre", monto: 400, formaPago: "Efectivo" }, { id: 2, nombre: "Ana Melchor", monto: 400, formaPago: "Efectivo" },
+  { id: 3, nombre: "Suegros", monto: 400, formaPago: "Efectivo" }, { id: 4, nombre: "Oliver Rancho", monto: 400, formaPago: "Efectivo" },
+  { id: 5, nombre: "Adorit Ramos", monto: 400, formaPago: "Efectivo" }, { id: 6, nombre: "Melissa", monto: 350, formaPago: "Efectivo" },
+  { id: 7, nombre: "Lili Rivera", monto: 300, formaPago: "Efectivo" }, { id: 8, nombre: "Dany Janey", monto: 300, formaPago: "Efectivo" },
+  { id: 9, nombre: "Diana Aguilar", monto: 300, formaPago: "Efectivo" }, { id: 10, nombre: "Orquídea", monto: 300, formaPago: "Efectivo" },
+  { id: 11, nombre: "Isaac Grajales", monto: 300, formaPago: "Efectivo" }, { id: 12, nombre: "Seres Simuta", monto: 300, formaPago: "Efectivo" },
+  { id: 13, nombre: "Eréndira", monto: 300, formaPago: "Efectivo" }, { id: 14, nombre: "Enelva Macal", monto: 300, formaPago: "Efectivo" },
+  { id: 15, nombre: "Yesenia", monto: 300, formaPago: "Efectivo" }, { id: 16, nombre: "Martín Antonio", monto: 250, formaPago: "Efectivo" },
+  { id: 17, nombre: "Olga Martínez", monto: 400, formaPago: "Efectivo" }, { id: 18, nombre: "Lilia García Velazco", monto: 480, formaPago: "Efectivo" },
+  { id: 19, nombre: "Ciro", monto: 400, formaPago: "Efectivo" }, { id: 20, nombre: "Carmen", monto: 480, formaPago: "Efectivo" },
+  { id: 21, nombre: "Itzel", monto: 480, formaPago: "Efectivo" }, { id: 22, nombre: "Jose Alberto Reyes Ramírez", monto: 400, formaPago: "Efectivo" },
+  { id: 23, nombre: "Aravela Ruiz", monto: 480, formaPago: "Efectivo" }, { id: 24, nombre: "Oscar Andrés Torres Guillén", monto: 480, formaPago: "Efectivo" },
+  { id: 25, nombre: "Álvaro Álvarez Hernández", monto: 400, formaPago: "Efectivo" }, { id: 26, nombre: "Marlene Hernández Díaz", monto: 400, formaPago: "Efectivo" },
+  { id: 27, nombre: "Cinthia Lisset Lara Moreno", monto: 480, formaPago: "Efectivo" }, { id: 28, nombre: "Maria Guadalupe Hernández Cruz", monto: 480, formaPago: "Efectivo" },
+  { id: 29, nombre: "Cinthia Elizabeth Gómez Hernández", monto: 480, formaPago: "Efectivo" }, { id: 30, nombre: "José Eduardo Sánchez Gordillo", monto: 480, formaPago: "Efectivo" },
+  { id: 31, nombre: "Fredy Ventura Méndez", monto: 400, formaPago: "Efectivo" }, { id: 32, nombre: "Alejandro Hernández Hernández", monto: 300, formaPago: "Efectivo" }
+];
+
+// ────────────────────────────────────────
+// DIBUJO DE RECIBO (CANVAS PRO)
+// ────────────────────────────────────────
+function imprimirRecibo(c) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1588; canvas.height = 2246;
+  const ctx = canvas.getContext("2d");
+  
+  ctx.fillStyle = "#fff"; ctx.fillRect(0,0,1588,2246);
+  ctx.fillStyle = "#737170"; ctx.fillRect(0, 210, 1588, 152);
+  ctx.fillStyle = "#000"; ctx.fillRect(176, 110, 380, 380);
+  
+  ctx.fillStyle = "#fff"; ctx.font = "900 108px Montserrat"; ctx.fillText("LUX", 366, 310);
+  ctx.fillStyle = "#fff"; ctx.font = "600 64px Montserrat"; ctx.fillText("RECIBO: " + c.formaPago.toUpperCase(), 700, 305);
+  ctx.fillStyle = "#000"; ctx.font = "600 80px Montserrat"; ctx.fillText("Cliente: " + c.nombre, 180, 700);
+  ctx.fillStyle = "#000"; ctx.font = "600 80px Montserrat"; ctx.fillText("Plan: " + obtenerMegas(c.monto) + " ($" + c.monto + ")", 180, 850);
+  
+  const link = document.createElement('a');
+  link.download = `Recibo_${c.nombre}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// ────────────────────────────────────────
+// GESTIÓN DE VISTAS Y DATOS
+// ────────────────────────────────────────
+let vista = 'lista', seleccionado = null;
+
+function render() {
+  const app = document.getElementById('app');
+  if (vista === 'lista') {
+    app.innerHTML = `<div class="header"><h2>Lux Satelital</h2></div><div class="content"><button class="btn btn-action" onclick="vista='nuevo'; seleccionado=null; render();">➕ Agregar</button><div style="margin-top:20px;">${clientes.map(c => `
+      <div class="cliente-item"><div><strong>${c.nombre}</strong><br><small>$${c.monto} - ${obtenerMegas(c.monto)} - ${c.formaPago}</small></div>
+      <div><button class="btn" onclick="editar(${c.id})">✎</button> <button class="btn btn-print" onclick="imprimirRecibo(clientes.find(x=>x.id===${c.id}))">🖨️</button></div></div>`).join('')}</div></div>`;
+  } else {
+    app.innerHTML = `<div class="content"><h2>${seleccionado?'Editar':'Nuevo'}</h2><input type="text" id="nombre" class="form-input" placeholder="Nombre" value="${seleccionado?.nombre || ''}"><input type="number" id="monto" class="form-input" placeholder="Monto" value="${seleccionado?.monto || ''}"><select id="formaPago" class="form-input"><option ${seleccionado?.formaPago==='Efectivo'?'selected':''}>Efectivo</option><option ${seleccionado?.formaPago==='Transferencia'?'selected':''}>Transferencia</option></select><button class="btn btn-action" onclick="guardar()">Guardar</button> <button class="btn" onclick="vista='lista'; render();">Cancelar</button></div>`;
+  }
+}
+
+function editar(id) { seleccionado = clientes.find(c => c.id === id); vista = 'editar'; render(); }
+function guardar() {
+  const n = document.getElementById('nombre').value, m = document.getElementById('monto').value, fp = document.getElementById('formaPago').value;
+  if(seleccionado) { seleccionado.nombre = n; seleccionado.monto = m; seleccionado.formaPago = fp; }
+  else { clientes.unshift({ id: Date.now(), nombre: n, monto: m, formaPago: fp }); }
+  vista = 'lista'; render();
+}
+render();
+</script>
+</body>
+</html>
