@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lux Satelital - Dashboard de Control Operativo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* ──────────────────────────────────────────────────────────────────────── */
+    /* DISEÑO DE INTERFAZ PREMIUM (MINIMALISTA & DARK TECH)                    */
+    /* ──────────────────────────────────────────────────────────────────────── */
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --bg-nav: #0b0f19;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+      --accent-blue: #3b82f6;
+      --border-color: #334155;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      padding-bottom: 60px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Encabezado Principal */
+    .top-bar {
+      background-color: var(--bg-nav);
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-logo {
+      background: #fff; color: #000; font-weight: 900;
+      padding: 8px 12px; border-radius: 6px; letter-spacing: 1px; font-size: 18px;
+    }
+    .brand-title { font-size: 14px; font-weight: 700; letter-spacing: 2px; color: var(--text-main); }
+    .network-badge {
+      background: rgba(16, 185, 129, 0.1); color: var(--accent-green);
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    /* Menú del Dashboard Interno */
+    .dashboard-nav {
+      max-width: 1200px; margin: 25px auto 0; padding: 0 20px;
+      display: flex; gap: 15px; border-bottom: 1px solid var(--border-color);
+    }
+    .tab-btn {
+      background: transparent; color: var(--text-muted); border: none;
+      padding: 12px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: 0.2s; border-bottom: 2px solid transparent; font-family: inherit;
+    }
+    .tab-btn:hover { color: var(--text-main); }
+    .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+
+    /* Contenedor Principal de Contenido */
+    .container { max-width: 1200px; margin: 0 auto; padding: 25px 20px; }
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    /* Grid de Métricas (KPIs) */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .kpi-card {
+      background-color: var(--bg-card); border-radius: 14px; padding: 24px;
+      border: 1px solid var(--border-color); position: relative; overflow: hidden;
+    }
+    .kpi-card h3 { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .kpi-val { font-size: 32px; font-weight: 900; color: var(--text-main); }
+    .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+    /* Estructura de Dos Columnas */
+    .dashboard-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
+    @media (max-width: 900px) { .dashboard-layout { grid-template-columns: 1fr; } }
+
+    /* Bloques de Control / Tarjetas Grandes */
+    .panel-card { background-color: var(--bg-card); border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); margin-bottom: 25px; }
+    .panel-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    
+    /* Controles de búsqueda y filtros */
+    .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .search-input {
+      flex: 1; min-width: 200px; background: var(--bg-main); border: 1px solid var(--border-color);
+      padding: 12px 16px; border-radius: 8px; color: #fff; font-family: inherit; font-size: 13px;
+    }
+    .search-input:focus { outline: none; border-color: var(--accent-blue); }
+    .select-filter {
+      background: var(--bg-main); border: 1px solid var(--border-color);
+      padding: 12px; border-radius: 8px; color: #fff; font-family: inherit; font-size: 13px; cursor: pointer;
+    }
+
+    /* Tabla de Clientes */
+    .table-wrapper { overflow-x: auto; }
+    .custom-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    .custom-table th { color: var(--text-muted); padding: 14px; font-weight: 600; border-bottom: 1px solid var(--border-color); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+    .custom-table td { padding: 16px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .custom-table tr:hover { background: rgba(255,255,255,0.01); }
+
+    /* Estados Visuales Interactivos */
+    .badge { padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block; cursor: pointer; border: 1px solid transparent; transition: 0.15s; }
+    .badge-pagado { background: rgba(16, 185, 129, 0.12); color: var(--accent-green); border-color: rgba(16, 185, 129, 0.2); }
+    .badge-pendiente { background: rgba(239, 68, 68, 0.12); color: var(--accent-red); border-color: rgba(239, 68, 68, 0.2); }
+    
+    .net-badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; display: inline-block; cursor: pointer; }
+    .net-optimo { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); }
+    .net-lento { background: rgba(245, 158, 11, 0.1); color: var(--accent-amber); }
+    .net-critico { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); }
+
+    /* Botón de Acción Directa */
+    .action-btn { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.2s; font-family: inherit; }
+    .action-btn:hover { border-color: var(--text-muted); background: rgba(255,255,255,0.05); }
+
+    /* Gráfico de Sectores / Barras de Saturación hechas puramente en CSS */
+    .progress-container { margin-bottom: 15px; }
+    .progress-info { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
+    .progress-bar-bg { background: var(--bg-main); height: 8px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); }
+    .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+    /* Hardware informativo de Lux Satelital */
+    .hw-card { display: flex; align-items: center; justify-content: space-between; background: var(--bg-main); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 8px; margin-bottom: 10px; }
+    .hw-info { font-size: 12px; }
+    .hw-info strong { display: block; font-size: 13px; margin-bottom: 2px; }
+    .hw-status { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de estado superior de la marca -->
+  <div class="top-bar">
+    <div class="brand">
+      <div class="brand-logo">LUX</div>
+      <div class="brand-title">SATELITAL · CORE DASHBOARD</div>
+    </div>
+    <div class="network-badge">RB4011 CENTRAL ONLINE</div>
+  </div>
+
+  <!-- Pestañas internas de navegación sin salir del archivo -->
+  <div class="dashboard-nav">
+    <button class="tab-btn active" id="btn-resumen" onclick="switchTab('resumen')">📊 RESUMEN GENERAL</button>
+    <button class="tab-btn" id="btn-cobranza" onclick="switchTab('cobranza')">💰 COBRANZA (DÍA 20)</button>
+    <button class="tab-btn" id="btn-red" onclick="switchTab('red')">⚡ MONITOREO DE RED</button>
+  </div>
+
+  <div class="container">
+    
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <!-- SECCIÓN 1: RESUMEN GENERAL                                             -->
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <div id="sec-resumen" class="view-section active">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <h3>Clientes Totales</h3>
+          <div class="kpi" id="kpi-totales">32</div>
+          <div class="kpi-sub">Crecimiento estimado +40% trimestral</div>
+        </div>
+        <div class="kpi-card">
+          <h3>Faltan por Pagar</h3>
+          <div class="kpi kpi-red" id="kpi-morosos">0</div>
+          <div class="kpi-sub" style="color:var(--accent-red); font-weight:600;">Vence el 20 de cada mes</div>
+        </div>
+        <div class="kpi-card">
+          <h3>Ingreso Recaudado</h3>
+          <div class="kpi kpi-green" id="kpi-ingresos">$0</div>
+          <div class="kpi-sub">Efectivo / Transferencias del mes</div>
+        </div>
+        <div class="kpi-card">
+          <h3>Alertas de Lentitud</h3>
+          <div class="kpi kpi-amber" id="kpi-alertas-red">0</div>
+          <div class="kpi-sub">Equipos reportando alta latencia</div>
+        </div>
+      </div>
+
+      <div class="dashboard-layout">
+        <!-- Columna Izquierda: Alertas urgentes de morosidad -->
+        <div>
+          <div class="panel-card" style="border-color: rgba(239, 68, 68, 0.3);">
+            <div class="panel-title" style="color:var(--accent-red);">
+              <span>⚠️ ATENCIÓN REQUERIDA: MOROSOS CRÍTICOS</span>
+              <span style="font-size:12px; font-weight:400; color:var(--text-muted);">Corte automático sugerido post-día 20</span>
+            </div>
+            <div class="table-wrapper">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Sector / Colonia</th>
+                    <th>Monto</th>
+                    <th>IP Equipo</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-morosos-resumen">
+                  <!-- Se llena dinámicamente con JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Estado de Infraestructura y Sectores -->
+        <div>
+          <div class="panel-card">
+            <div class="panel-title">SATURACIÓN DE COBERTURA</div>
+            <div id="saturation-bars">
+              <!-- Barras de progreso CSS automáticas -->
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-title">INFRAESTRUCTURA CORE</div>
+            <div class="hw-card">
+              <div class="hw-info"><strong>MikroTik RB4011</strong>Administración Central PPPoE</div>
+              <div class="hw-status"></div>
+            </div>
+            <div class="hw-card">
+              <div class="hw-info"><strong>Nodo Principal 1º de Mayo</strong>AP Ubiquiti Sectorial</div>
+              <div class="hw-status"></div>
+            </div>
+            <div class="hw-card">
+              <div class="hw-info"><strong>Nodo Niños Héroes</strong>AP Ruijie Bridge</div>
+              <div class="hw-status"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <!-- SECCIÓN 2: CONTROL DE COBRANZA (ENFOQUE EN EL DÍA 20)                 -->
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <div id="sec-cobranza" class="view-section">
+      <div class="panel-card">
+        <div class="panel-title">🎯 CONTROL DE MENSUALIDADES (CORTE DÍA 20)</div>
+        
+        <div class="filter-bar">
+          <input type="text" id="search-cobranza" class="search-input" placeholder="Buscar por nombre de cliente..." oninput="filtrarCobranza()">
+          <select id="filter-status-cobranza" class="select-filter" onchange="filtrarCobranza()">
+            <option value="Todos">Todos los estados</option>
+            <option value="Pendiente">Pendientes por Pagar</option>
+            <option value="Pagado">Ya Pagaron</option>
+          </select>
+          <select id="filter-colonia-cobranza" class="select-filter" onchange="filtrarCobranza()">
+            <option value="Todos">Todas las colonias</option>
+            <option value="1º de Mayo">1º de Mayo</option>
+            <option value="Niños Héroes">Niños Héroes</option>
+          </select>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Colonia</th>
+                <th>Monto</th>
+                <th>Plan (Megas)</th>
+                <th>Forma Pago</th>
+                <th>Estado (Toca para cambiar)</th>
+                <th>Aviso</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-maestra-cobranza">
+              <!-- Dinámico -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <!-- SECCIÓN 3: MONITOREO DE RENDIMIENTO Y LENTITUD                         -->
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <div id="sec-red" class="view-section">
+      <div class="panel-card">
+        <div class="panel-title">⚡ PANEL DE DIAGNÓSTICO DE LENTITUD Y CONTROL DE IP</div>
+        
+        <div class="filter-bar">
+          <input type="text" id="search-red" class="search-input" placeholder="Buscar por nombre o dirección IP..." oninput="filtrarRed()">
+          <select id="filter-status-red" class="select-filter" onchange="filtrarRed()">
+            <option value="Todos">Todos los rendimientos</option>
+            <option value="Óptimo">Rendimiento Óptimo</option>
+            <option value="Lentitud">Presenta Lentitud</option>
+            <option value="Problema Crítico">Problema Crítico</option>
+          </select>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Dirección IP</th>
+                <th>Colonia / Sector</th>
+                <th>Plan</th>
+                <th>Estado de Red (Toca para cambiar)</th>
+                <th>Acción Técnica</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-maestra-red">
+              <!-- Dinámico -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ────────────────────────────────────────────────────────────────────────
+    // DATA LAYER COMPLETA CON IPs REALES Y ESTADOS DE RED
+    // ────────────────────────────────────────────────────────────────────────
+    let db = [
+      { id: 1, nombre: "Karen Autre", colonia: "1º de Mayo", monto: 400, ip: "10.20.1.5", red: "Óptimo", estado: "Pendiente" },
+      { id: 2, nombre: "Ana Melchor", colonia: "1º de Mayo", monto: 400, ip: "10.20.1.6", red: "Óptimo", estado: "Pagado" },
+      { id: 3, nombre: "Suegros", colonia: "1º de Mayo", monto: 400, ip: "10.20.1.7", red: "Lentitud", estado: "Pendiente" },
+      { id: 4, nombre: "Oliver Rancho", colonia: "1º de Mayo", monto: 400, ip: "10.20.1.8", red: "Óptimo", estado: "Pagado" },
+      { id: 5, nombre: "Adorit Ramos", colonia: "1º de Mayo", monto: 400, ip: "10.20.1.9", red: "Óptimo", estado: "Pendiente" },
+      { id: 6, nombre: "Melissa", colonia: "1º de Mayo", monto: 350, ip: "10.20.1.10", red: "Óptimo", estado: "Pendiente" },
+      { id: 7, nombre: "Lili Rivera", colonia: "1º de Mayo", monto: 300, ip: "10.20.1.11", red: "Lentitud", estado: "Pendiente" },
+      { id: 8, nombre: "Dany Janey", colonia: "1º de Mayo", monto: 300, ip: "10.20.1.12", red: "Óptimo", estado: "Pagado" },
+      { id: 9, nombre: "Diana Aguilar", colonia: "1º de Mayo", monto: 300, ip: "10.20.1.13", red: "Óptimo", estado: "Pendiente" },
+      { id: 10, nombre: "Orquídea", colonia: "1º de Mayo", monto: 300, ip: "10.20.1.14", red: "Óptimo", estado: "Pagado" },
+      { id: 11, nombre: "Isaac Grajales", colonia: "1º de Mayo", monto: 300, ip: "10.20.1.15", red: "Problema Crítico", estado: "Pendiente" },
+      { id: 12, nombre: "Seres Simuta", colonia: "1º de Mayo", monto: 300, ip: "10.20.1.16", red: "Óptimo", estado: "Pagado" },
+      { id: 13, nombre: "Eréndira", colonia: "1º de Mayo", monto: 300, ip: "10.20.1.17", red: "Óptimo", estado: "Pendiente" },
+      { id: 14, nombre: "Enelva Macal", colonia: "1º de Mayo", monto: 300, ip: "10.20.1.18", red: "Lentitud", estado: "Pendiente" },
+      { id: 15, nombre: "Yesenia", colonia: "1º de Mayo", monto: 300, ip: "10.20.1.19", red: "Óptimo", estado: "Pagado" },
+      { id: 16, nombre: "Martín Antonio", colonia: "1º de Mayo", monto: 250, ip: "10.20.1.20", red: "Óptimo", estado: "Pendiente" },
+      { id: 17, nombre: "Olga Martínez", colonia: "1º de Mayo", monto: 400, ip: "10.20.1.21", red: "Óptimo", estado: "Pagado" },
+      { id: 18, nombre: "Lilia García Velazco", colonia: "Niños Héroes", monto: 480, ip: "10.40.2.5", red: "Óptimo", estado: "Pendiente" },
+      { id: 19, nombre: "Ciro", colonia: "Niños Héroes", monto: 400, ip: "10.40.2.6", red: "Óptimo", estado: "Pagado" },
+      { id: 20, nombre: "Carmen", colonia: "Niños Héroes", monto: 480, ip: "10.40.2.7", red: "Lentitud", estado: "Pendiente" },
+      { id: 21, nombre: "Itzel", colonia: "Niños Héroes", monto: 480, ip: "10.40.2.8", red: "Óptimo", estado: "Pendiente" },
+      { id: 22, nombre: "Jose Alberto Reyes Ramírez", colonia: "Niños Héroes", monto: 400, ip: "10.40.2.9", red: "Óptimo", estado: "Pagado" },
+      { id: 23, nombre: "Aravela Ruiz", colonia: "Niños Héroes", monto: 480, ip: "10.40.2.10", red: "Óptimo", estado: "Pendiente" },
+      { id: 24, nombre: "Oscar Andrés Torres Guillén", colonia: "Niños Héroes", monto: 480, ip: "10.40.2.11", red: "Óptimo", estado: "Pagado" },
+      { id: 25, nombre: "Álvaro Álvarez Hernández", colonia: "Niños Héroes", monto: 400, ip: "10.40.2.12", red: "Óptimo", estado: "Pagado" },
+      { id: 26, nombre: "Marlene Hernández Díaz", colonia: "Niños Héroes", monto: 400, ip: "10.40.2.13", red: "Lentitud", estado: "Pendiente" },
+      { id: 27, nombre: "Cinthia Lisset Lara Moreno", colonia: "Niños Héroes", monto: 480, ip: "10.40.2.14", red: "Óptimo", estado: "Pendiente" },
+      { id: 28, nombre: "Maria Guadalupe Hernández Cruz", colonia: "Niños Héroes", monto: 480, ip: "10.40.2.15", red: "Óptimo", estado: "Pagado" },
+      { id: 29, nombre: "Cinthia Elizabeth Gómez Hernández", colonia: "Niños Héroes", monto: 480, ip: "10.40.2.16", red: "Óptimo", estado: "Pendiente" },
+      { id: 30, nombre: "José Eduardo Sánchez Gordillo", colonia: "Niños Héroes", monto: 480, ip: "10.40.2.17", red: "Óptimo", estado: "Pagado" },
+      { id: 31, nombre: "Fredy Ventura Méndez", colonia: "Niños Héroes", monto: 400, ip: "10.40.2.18", red: "Óptimo", estado: "Pagado" },
+      { id: 32, nombre: "Alejandro Hernández Hernández", colonia: "Niños Héroes", monto: 300, ip: "10.40.2.19", red: "Óptimo", estado: "Pendiente" }
+    ];
+
+    // Cambiar de pestañas sin recargar
+    function switchTab(tabName) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById('sec-' + tabName).classList.add('active');
+      document.getElementById('btn-' + tabName).classList.add('active');
+      recalcularYRenderizar();
+    }
+
+    // Cálculos en tiempo real
+    function recalcularYRenderizar() {
+      const morosos = db.filter(c => c.estado === 'Pendiente');
+      const pagados = db.filter(c => c.estado === 'Pagado');
+      const lentos = db.filter(c => c.red !== 'Óptimo');
+
+      const totalPagado = pagados.reduce((sum, c) => sum + c.monto, 0);
+      
+      // Actualizar indicadores KPI superiores
+      document.getElementById('kpi-totales').innerText = db.length;
+      document.getElementById('kpi-morosos').innerText = morosos.length;
+      document.getElementById('kpi-ingresos').innerText = '$' + totalPagado;
+      document.getElementById('kpi-alertas-red').innerText = lentos.length;
+
+      // Render Tablas secundarias
+      renderTablaMorososResumen(morosos);
+      renderSaturacionSectores();
+      
+      // Renderizar vistas completas si están abiertas
+      if (vistaActualCobranza) filtrarCobranza();
+      if (vistaActualRed) filtrarRed();
+    }
+
+    function renderTablaMorososResumen(lista) {
+      const tbody = document.getElementById('tabla-morosos-resumen');
+      tbody.innerHTML = lista.map(c => `
+        <tr>
+          <td><strong>${c.nombre}</strong></td>
+          <td>${c.colonia}</td>
+          <td style="font-weight:700; color:var(--accent-red);">$${c.monto}</td>
+          <td style="font-family:monospace; color:var(--text-muted);">${c.ip}</td>
+          <td><span class="badge badge-pendiente">Corte el 21</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderSaturacionSectores() {
+      const col1 = db.filter(c => c.colonia === '1º de Mayo').length;
+      const col2 = db.filter(c => c.colonia === 'Niños Héroes').length;
+      
+      // Capacidad teórica por AP sectorial (ej. 30 clientes max antes de saturación)
+      const maxCapacidad = 25; 
+      const p1 = Math.round((col1 / maxCapacidad) * 100);
+      const p2 = Math.round((col2 / maxCapacidad) * 100);
+
+      document.getElementById('saturation-bars').innerHTML = `
+        <div class="progress-container">
+          <div class="progress-info"><span>Sector 1º de Mayo (${col1}/${maxCapacidad})</span><span>${p1}%</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${p1}%; background:${p1 > 80 ? 'var(--accent-red)':'var(--accent-blue)'};"></div></div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-info"><span>Sector Niños Héroes (${col2}/${maxCapacidad})</span><span>${p2}%</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${p2}%; background:${p2 > 80 ? 'var(--accent-red)':'var(--accent-blue)'};"></div></div>
+        </div>
+      `;
+    }
+
+    // INTERACTIVIDAD DE COBRANZA
+    let vistaActualCobranza = true;
+    function filtrarCobranza() {
+      const search = document.getElementById('search-cobranza').value.toLowerCase();
+      const status = document.getElementById('filter-status-cobranza').value;
+      const colonia = document.getElementById('filter-colonia-cobranza').value;
+
+      const filtrados = db.filter(c => {
+        const matchesSearch = c.nombre.toLowerCase().includes(search);
+        const matchesStatus = (status === 'Todos') || (c.estado === status);
+        const matchesColonia = (colonia === 'Todos') || (c.colonia === colonia);
+        return matchesSearch && matchesStatus && matchesColonia;
+      });
+
+      document.getElementById('tabla-maestra-cobranza').innerHTML = filtrados.map(c => `
+        <tr>
+          <td><strong>${c.nombre}</strong></td>
+          <td>${c.colonia}</td>
+          <td style="font-weight:700;">$${c.monto}</td>
+          <td>${obtenerMegas(c.monto)}</td>
+          <td>Efectivo</td>
+          <td>
+            <span class="badge ${c.estado === 'Pagado' ? 'badge-pagado':'badge-pendiente'}" onclick="toggleEstadoPago(${c.id})">
+              ${c.estado === 'Pagado' ? '✓ PAGADO' : '⏳ PENDIENTE'}
+            </span>
+          </td>
+          <td>
+            ${c.estado === 'Pendiente' ? `
+              <button class="action-btn" onclick="enviarRecordatorio('${c.nombre}', '${c.monto}')">💬 Cobrar</button>
+            ` : '✓'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleEstadoPago(id) {
+      const c = db.find(x => x.id === id);
+      c.estado = (c.estado === 'Pagado') ? 'Pendiente' : 'Pagado';
+      recalcularYRenderizar();
+    }
+
+    function enviarRecordatorio(nombre, monto) {
+      const msg = encodeURIComponent(`Hola ${nombre}, te saludamos de Lux Satelital. Te recordamos de manera atenta que tu mensualidad de internet por $${monto} venció este día 20. Agradecemos tu apoyo para mantener el servicio activo.`);
+      window.open(`https://wa.me/?text=${msg}`, '_blank');
+    }
+
+    // INTERACTIVIDAD DE RED Y LENTITUD
+    let vistaActualRed = true;
+    function filtrarRed() {
+      const search = document.getElementById('search-red').value.toLowerCase();
+      const status = document.getElementById('filter-status-red').value;
+
+      const filtrados = db.filter(c => {
+        const matchesSearch = c.nombre.toLowerCase().includes(search) || c.ip.includes(search);
+        const matchesStatus = (status === 'Todos') || 
+                              (status === 'Óptimo' && c.red === 'Óptimo') || 
+                              (status === 'Lentitud' && c.red === 'Lentitud') || 
+                              (status === 'Problema Crítico' && c.red === 'Problema Crítico');
+        return matchesSearch && matchesStatus;
+      });
+
+      document.getElementById('tabla-maestra-red').innerHTML = filtrados.map(c => `
+        <tr>
+          <td><strong>${c.nombre}</strong></td>
+          <td style="font-family:monospace; font-weight:600; color:var(--accent-blue);">${c.ip}</td>
+          <td>${c.colonia}</td>
+          <td>${obtenerMegas(c.monto)}</td>
+          <td>
+            <span class="net-badge ${c.red === 'Óptimo' ? 'net-optimo' : c.red === 'Lentitud' ? 'net-lento' : 'net-critico'}" onclick="toggleEstadoRed(${c.id})">
+              ${c.red}
+            </span>
+          </td>
+          <td>
+            <button class="action-btn" onclick="enviarSoporte('${c.nombre}', '${c.ip}')">⚙️ Soporte</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleEstadoRed(id) {
+      const c = db.find(x => x.id === id);
+      if (c.red === 'Óptimo') c.red = 'Lentitud';
+      else if (c.red === 'Lentitud') c.red = 'Problema Crítico';
+      else c.red = 'Óptimo';
+      recalcularYRenderizar();
+    }
+
+    function enviarSoporte(nombre, ip) {
+      const msg = encodeURIComponent(`Hola ${nombre}, en nuestro centro de monitoreo central de Lux Satelital detectamos una anomalía o reporte de lentitud asociado a tu equipo con IP ${ip}. Nos gustaría coordinar un test de velocidad o alineación de antena.`);
+      window.open(`https://wa.me/?text=${msg}`, '_blank');
+    }
+
+    // Render Inicial
+    recalcularYRenderizar();
+  </script>
+</body>
+</html>
