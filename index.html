@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Recibos - Lux Satelital</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; }
+    
+    .container { width: 100%; }
+    .header { 
+      background: #111; padding: 16px 28px; display: flex; align-items: center; gap: 14px; 
+      color: #fff;
+    }
+    .header-logo { display: flex; flex-direction: column; }
+    .header-logo .name { font-size: 22px; font-weight: 900; letter-spacing: 3px; }
+    .header-logo .sub { font-size: 9px; letter-spacing: 4px; color: #aaa; }
+    .header-divider { width: 1px; height: 40px; background: #444; }
+    .header-title { color: #ddd; font-size: 13px; }
+    
+    .content { max-width: 680px; margin: 0 auto; padding: 32px 20px; }
+    .main { background: #f5f5f5; min-height: 100vh; }
+    
+    .form-group { margin-bottom: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .search-input { flex: 1; min-width: 200px; padding: 12px 16px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 14px; }
+    .btn-primary { background: #111; color: #fff; padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .btn-primary:hover { background: #333; }
+    .btn-secondary { background: #fff; color: #111; padding: 10px 22px; border-radius: 7px; border: none; cursor: pointer; font-size: 14px; font-weight: 700; }
+    .btn-secondary:hover { background: #eee; }
+    .btn-danger { background: #fff; color: #c00; padding: 9px 14px; border-radius: 7px; border: 1.5px solid #eee; cursor: pointer; font-size: 13px; }
+    .btn-danger:hover { background: #ffe0e0; }
+    .btn-small { background: #111; color: #fff; padding: 9px 18px; border-radius: 7px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .btn-small:hover { background: #333; }
+    
+    .date-section { display: flex; align-items: center; gap: 10px; }
+    .date-label { font-size: 13px; color: #555; white-space: nowrap; }
+    .date-input { padding: 8px 12px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 13px; }
+    
+    .clientes-list { display: flex; flex-direction: column; gap: 10px; }
+    .cliente-item { 
+      background: #fff; border-radius: 10px; border: 1.5px solid #e8e8e8; padding: 16px 20px;
+      display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .cliente-info h3 { font-weight: 700; font-size: 15px; }
+    .cliente-info p { color: #888; font-size: 12px; margin-top: 3px; }
+    .cliente-actions { display: flex; gap: 8px; }
+    
+    .empty-state { text-align: center; color: #aaa; padding: 40px 0; font-size: 14px; }
+    
+    .recibo-view { background: #e8e8e8; min-height: 100vh; }
+    .recibo-header { 
+      background: #111; padding: 14px 24px; display: flex; align-items: center; 
+      justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .recibo-header-left { display: flex; align-items: center; gap: 14px; }
+    .recibo-header-right { display: flex; gap: 10px; align-items: center; }
+    .btn-back { background: transparent; border: 1.5px solid #555; color: #ccc; padding: 8px 14px; border-radius: 7px; cursor: pointer; font-size: 13px; }
+    .btn-back:hover { background: #222; }
+    .recibo-title { color: #fff; font-weight: 600; font-size: 14px; }
+    .date-input-dark { padding: 8px 12px; border-radius: 7px; border: 1.5px solid #444; background: #222; color: #fff; font-size: 13px; }
+    
+    .recibo-preview { display: flex; justify-content: center; padding: 32px 20px; overflow-x: auto; }
+    .recibo-canvas-container { box-shadow: 0 4px 30px rgba(0,0,0,.18); border-radius: 4px; }
+    
+    .form-card { background: #fff; border-radius: 12px; padding: 32px; border: 1.5px solid #e8e8e8; }
+    .form-card h2 { margin: 0 0 24px; font-size: 18px; }
+    .form-field { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 600; }
+    .form-input { width: 100%; padding: 10px 14px; border-radius: 7px; border: 1.5px solid #ddd; font-size: 14px; }
+    .form-select { width: 100%; padding: 10px 14px; border-radius: 7px; border: 1.5px solid #ddd; font-size: 14px; background: #fff; }
+    .form-actions { display: flex; gap: 10px; }
+    .form-actions button { flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; }
+    
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// ────────────────────────────────────────
+// DATOS INICIALES
+// ────────────────────────────────────────
+const CLIENTES_INICIALES = [
+  { id: 1, nombre: "Álvaro Álvarez Hernández", plan: "15 megas", monto: 400, formaPago: "Transferencia" },
+  { id: 2, nombre: "María López Gómez", plan: "25 megas", monto: 550, formaPago: "Efectivo" },
+  { id: 3, nombre: "Juan Pérez Ruiz", plan: "10 megas", monto: 300, formaPago: "Transferencia" },
+];
+
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+// ────────────────────────────────────────
+// UTILIDADES
+// ────────────────────────────────────────
+function formatearFecha(date) {
+  return `${date.getDate()} de ${MESES[date.getMonth()]} de ${date.getFullYear()}`;
+}
+
+function periodoServicio(date) {
+  const inicio = new Date(date);
+  const fin = new Date(date);
+  fin.setMonth(fin.getMonth() + 1);
+  fin.setDate(fin.getDate() - 1);
+  return `${formatearFecha(inicio)} al ${formatearFecha(fin)}`;
+}
+
+// ────────────────────────────────────────
+// GENERADOR DE CANVAS
+// ────────────────────────────────────────
+function generarReciboCanvas(cliente, fecha) {
+  const W = 794, H = 1123;
+  const canvas = document.createElement("canvas");
+  canvas.width = W * 2;
+  canvas.height = H * 2;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(2, 2);
+
+  // Fondo
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+
+  // HEADER
+  ctx.fillStyle = "#888888";
+  ctx.fillRect(0, 0, W, 90);
+  ctx.fillStyle = "#111111";
+  ctx.fillRect(0, 0, 200, 90);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 42px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("LUX", 100, 52);
+  ctx.font = "12px Arial";
+  ctx.fillStyle = "#cccccc";
+  ctx.fillText("SATELITAL", 100, 72);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 26px Arial";
+  ctx.fillText("RECIBO DE PAGO", 200 + (W - 200) / 2, 52);
+
+  // DATOS DERECHOS
+  const labelX = 380, valorX = 500, lineW = 260;
+
+  function campoLinea(label, valor, y) {
+    ctx.font = "bold 13px Arial";
+    ctx.fillStyle = "#222";
+    ctx.textAlign = "right";
+    ctx.fillText(label, labelX, y);
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(valorX, y + 2);
+    ctx.lineTo(valorX + lineW, y + 2);
+    ctx.stroke();
+    ctx.font = "13px Arial";
+    ctx.fillStyle = "#222";
+    ctx.textAlign = "left";
+    ctx.fillText(valor, valorX + 6, y);
+  }
+
+  campoLinea("Fecha", formatearFecha(fecha), 130);
+  campoLinea("Recibo", cliente.nombre, 160);
+  campoLinea("Plan Adquirido", cliente.plan, 190);
+
+  // LÍNEAS DE TEXTO
+  const lx = 60, vx = 60;
+
+  function lineaTexto(label, valor, y, valorX2, lineW2) {
+    const vStart = valorX2 || (lx + ctx.measureText(label).width + 12);
+    const lEnd = lineW2 || (W - lx - 40);
+    ctx.font = "13px Arial";
+    ctx.fillStyle = "#333";
+    ctx.textAlign = "left";
+    ctx.fillText(label, lx, y);
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(vStart, y + 3);
+    ctx.lineTo(lEnd, y + 3);
+    ctx.stroke();
+    ctx.font = "13px Arial";
+    ctx.fillStyle = "#222";
+    ctx.fillText(valor, vStart + 6, y);
+  }
+
+  lineaTexto("Recibí de", "Servicio de Internet Satelital", 270);
+
+  // Suma + forma
+  const sumaLabelW = ctx.measureText("La suma de").width;
+  const sumaVX = lx + sumaLabelW + 12;
+  ctx.font = "13px Arial";
+  ctx.fillStyle = "#333";
+  ctx.textAlign = "left";
+  ctx.fillText("La suma de", lx, 320);
+  ctx.strokeStyle = "#444";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(sumaVX, 323);
+  ctx.lineTo(sumaVX + 180, 323);
+  ctx.stroke();
+  ctx.font = "13px Arial";
+  ctx.fillStyle = "#222";
+  ctx.fillText(`$${cliente.monto}`, sumaVX + 6, 320);
+
+  const fpLabelX = sumaVX + 200;
+  const fpLabelW = ctx.measureText("Forma de pago").width;
+  ctx.fillStyle = "#333";
+  ctx.fillText("Forma de pago", fpLabelX, 320);
+  ctx.strokeStyle = "#444";
+  ctx.beginPath();
+  ctx.moveTo(fpLabelX + fpLabelW + 8, 323);
+  ctx.lineTo(fpLabelX + fpLabelW + 200, 323);
+  ctx.stroke();
+  ctx.fillStyle = "#222";
+  ctx.fillText(cliente.formaPago, fpLabelX + fpLabelW + 14, 320);
+
+  // Trabajo realizado
+  lineaTexto("Por el trabajo realizado:", "servicio de internet", 370);
+
+  // Líneas decorativas
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = "#aaa";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(lx, 396);
+  ctx.lineTo(W - lx, 396);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(lx, 408);
+  ctx.lineTo(W - lx, 408);
+  ctx.stroke();
+
+  lineaTexto("Correspondiente al periodo de", periodoServicio(fecha), 450);
+
+  // FIRMA
+  ctx.font = "italic 34px Arial";
+  ctx.fillStyle = "#222";
+  ctx.textAlign = "left";
+  ctx.fillText("Lux Satelital", lx, 570);
+
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(lx, 578);
+  ctx.lineTo(lx + 220, 578);
+  ctx.stroke();
+
+  ctx.font = "11px Arial";
+  ctx.fillStyle = "#666";
+  ctx.textAlign = "center";
+  ctx.fillText("Firma y aclaración", lx + 110, 596);
+  ctx.fillText("receptor", lx + 110, 612);
+
+  // FOOTER
+  ctx.fillStyle = "#888888";
+  ctx.fillRect(0, H - 70, W, 70);
+
+  ctx.font = "bold 13px Arial";
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.fillText("CONTACTO", W / 2, H - 42);
+
+  ctx.font = "15px Arial";
+  ctx.fillText("📱  961 269 75 67", W / 2, H - 18);
+
+  return canvas;
+}
+
+// ────────────────────────────────────────
+// STATE MANAGEMENT
+// ────────────────────────────────────────
+const app = {
+  clientes: [...CLIENTES_INICIALES],
+  vista: 'lista', // 'lista', 'recibo', 'nuevo'
+  seleccionado: null,
+  busqueda: '',
+  fecha: new Date().toISOString().split('T')[0],
+  nuevoForm: { nombre: '', plan: '', monto: '', formaPago: 'Transferencia' },
+  descargando: false,
+
+  setVista(v) { this.vista = v; this.render(); },
+  setSeleccionado(c) { this.seleccionado = c; this.setVista('recibo'); },
+  setBusqueda(b) { this.busqueda = b; this.render(); },
+  setFecha(f) { this.fecha = f; this.render(); },
+  
+  agregarCliente() {
+    const f = this.nuevoForm;
+    if (!f.nombre || !f.plan || !f.monto) return alert('Completa todos los campos');
+    this.clientes.push({ id: Date.now(), nombre: f.nombre, plan: f.plan, monto: Number(f.monto), formaPago: f.formaPago });
+    this.nuevoForm = { nombre: '', plan: '', monto: '', formaPago: 'Transferencia' };
+    this.setVista('lista');
+  },
+
+  eliminarCliente(id) {
+    if (!confirm('¿Eliminar este cliente?')) return;
+    this.clientes = this.clientes.filter(c => c.id !== id);
+    if (this.seleccionado?.id === id) { this.seleccionado = null; this.setVista('lista'); }
+  },
+
+  descargarRecibo() {
+    try {
+      const canvas = generarReciboCanvas(this.seleccionado, new Date(this.fecha + 'T12:00:00'));
+      const link = document.createElement('a');
+      link.download = `Recibo_${this.seleccionado.nombre.replace(/ /g,'_')}_${this.fecha}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch(e) {
+      alert('Error: ' + e.message);
+    }
+  },
+
+  render() {
+    const html = this.vista === 'lista' ? this.renderLista() : this.vista === 'nuevo' ? this.renderNuevo() : this.renderRecibo();
+    document.getElementById('app').innerHTML = html;
+    this.attachEvents();
+  },
+
+  renderLista() {
+    const filtrados = this.clientes.filter(c => c.nombre.toLowerCase().includes(this.busqueda.toLowerCase()));
+    const items = filtrados.map(c => `
+      <div class="cliente-item">
+        <div class="cliente-info">
+          <h3>${c.nombre}</h3>
+          <p>${c.plan} · $${c.monto} · ${c.formaPago}</p>
+        </div>
+        <div class="cliente-actions">
+          <button class="btn-small" onclick="app.setSeleccionado(app.clientes.find(x=>x.id===${c.id}))">Ver recibo</button>
+          <button class="btn-danger" onclick="app.eliminarCliente(${c.id})">✕</button>
+        </div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="main">
+        <div class="header">
+          <div class="header-logo">
+            <div class="header-logo name">LUX</div>
+            <div class="header-logo sub">SATELITAL</div>
+          </div>
+          <div class="header-divider"></div>
+          <div class="header-title">GENERADOR DE RECIBOS</div>
+        </div>
+        <div class="content">
+          <div class="form-group">
+            <input type="text" class="search-input" id="busqueda" placeholder="🔍  Buscar cliente..." value="${this.busqueda}">
+            <button class="btn-primary" onclick="app.setVista('nuevo')">+ Nuevo cliente</button>
+          </div>
+          <div class="date-section" style="margin-bottom: 24px;">
+            <label class="date-label">Fecha del recibo:</label>
+            <input type="date" class="date-input" id="fecha" value="${this.fecha}">
+          </div>
+          <div class="clientes-list">
+            ${items.length ? items : '<div class="empty-state">No se encontraron clientes</div>'}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  renderNuevo() {
+    const f = this.nuevoForm;
+    return `
+      <div class="main">
+        <div class="header">
+          <div class="header-logo">
+            <div class="header-logo name">LUX</div>
+            <div class="header-logo sub">SATELITAL</div>
+          </div>
+          <div class="header-divider"></div>
+          <span class="header-title">NUEVO CLIENTE</span>
+        </div>
+        <div class="content">
+          <div class="form-card">
+            <h2>Agregar cliente</h2>
+            <div class="form-field">
+              <label class="form-label">Nombre completo</label>
+              <input type="text" class="form-input" id="nombre" placeholder="Ej. Juan Pérez Ruiz" value="${f.nombre}">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Plan contratado</label>
+              <input type="text" class="form-input" id="plan" placeholder="Ej. 25 megas" value="${f.plan}">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Monto mensual (\$)</label>
+              <input type="number" class="form-input" id="monto" placeholder="Ej. 400" value="${f.monto}">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Forma de pago</label>
+              <select class="form-select" id="formaPago">
+                <option ${f.formaPago==='Transferencia'?'selected':''}>Transferencia</option>
+                <option ${f.formaPago==='Efectivo'?'selected':''}>Efectivo</option>
+                <option ${f.formaPago==='Depósito'?'selected':''}>Depósito</option>
+                <option ${f.formaPago==='Tarjeta'?'selected':''}>Tarjeta</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" onclick="app.setVista('lista')" style="background:#ddd;color:#333">Cancelar</button>
+              <button class="btn-primary" onclick="app.guardarFormulario()">Guardar cliente</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  renderRecibo() {
+    const c = this.seleccionado;
+    const fechaDate = new Date(this.fecha + 'T12:00:00');
+    return `
+      <div class="recibo-view">
+        <div class="recibo-header">
+          <div class="recibo-header-left">
+            <button class="btn-back" onclick="app.setVista('lista')">← Volver</button>
+            <span class="recibo-title">${c.nombre}</span>
+          </div>
+          <div class="recibo-header-right">
+            <input type="date" class="date-input-dark" id="fecha" value="${this.fecha}">
+            <button class="btn-secondary" onclick="app.descargarRecibo()" id="btnDescargar">⬇ Descargar recibo</button>
+          </div>
+        </div>
+        <div class="recibo-preview">
+          <canvas id="previewCanvas" class="recibo-canvas-container" width="1588" height="2246"></canvas>
+        </div>
+      </div>
+    `;
+  },
+
+  guardarFormulario() {
+    const nombre = document.getElementById('nombre').value;
+    const plan = document.getElementById('plan').value;
+    const monto = document.getElementById('monto').value;
+    const formaPago = document.getElementById('formaPago').value;
+    this.nuevoForm = { nombre, plan, monto, formaPago };
+    this.agregarCliente();
+  },
+
+  attachEvents() {
+    if (document.getElementById('busqueda')) {
+      document.getElementById('busqueda').addEventListener('input', e => this.setBusqueda(e.target.value));
+    }
+    if (document.getElementById('fecha')) {
+      document.getElementById('fecha').addEventListener('change', e => this.setFecha(e.target.value));
+    }
+    if (this.vista === 'recibo' && document.getElementById('previewCanvas')) {
+      const canvas = generarReciboCanvas(this.seleccionado, new Date(this.fecha + 'T12:00:00'));
+      const preview = document.getElementById('previewCanvas');
+      const ctx = preview.getContext('2d');
+      ctx.drawImage(canvas, 0, 0, preview.width, preview.height);
+    }
+  }
+};
+
+app.render();
+</script>
+
+</body>
+</html>
